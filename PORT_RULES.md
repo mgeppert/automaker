@@ -41,3 +41,73 @@ Each requirement has a single pass/fail test that, on failure, points at one pla
 - **Mock provider mode** (parity with `AUTOMAKER_MOCK_AGENT=true`) so CI and dev loops don't burn API credits.
 - **Cross-platform CI** from day one: GitHub Actions running the full test suite on both Windows and Linux runners.
 - **Structured logging + request IDs** scaffolded before any feature work.
+
+## Ground Rules
+
+Rules governing **how** the port is planned and built (distinct from the substantive rules above which govern **what** the port must produce).
+
+### Library-first ("don't reinvent the wheel")
+
+Prefer mature Python libraries over hand-rolled equivalents. Every implementation requirement must list its candidate Python libraries in the Implementation notes section and justify the choice. "No library; hand-rolled" is allowed but requires a one-sentence reason.
+
+Default picks (use unless there's a real reason not to):
+
+| Concern | Library |
+|---|---|
+| HTTP server + routing | `fastapi` + `uvicorn` |
+| Data validation & settings | `pydantic` (v2) + `pydantic-settings` |
+| HTTP client (sync + async) | `httpx` |
+| Logging | `structlog` |
+| Terminal (PTY), cross-platform | `ptyprocess` (Linux) + `pywinpty` (Windows) behind one abstraction |
+| Process utilities (kill tree, signals) | `psutil` |
+| Git operations | `subprocess` (CLI `git`) — use `pygit2` only if performance requires |
+| Testing | `pytest` + `pytest-asyncio` + `pytest-cov` |
+| TOML / YAML | stdlib `tomllib` / `pyyaml` |
+| File locking | `portalocker` |
+
+### Multi-pass requirements process
+
+Requirements are written iteratively:
+
+1. **Pass 1 (L0):** coarse Feature-level statements. Not singular, not testable. Big buckets. Expect ~15–25 L0 requirements.
+2. **Pass 2+ (L1, L2, ...):** decompose each leaf until it is singular and diagnostic per Rule 5.
+3. Only leaves are implemented and tested. Parent Features are grouping + progress rollup only.
+
+### Requirement IDs and traceability
+
+IDs are `REQ-<hierarchy>` with dotted hierarchical segments at 1000-step spacing:
+
+- L0 Features: `REQ-1000`, `REQ-2000`, `REQ-3000`, ...
+- L1: `REQ-1000.1000`, `REQ-1000.2000`, ...
+- L2: `REQ-1000.1000.1000`, ...
+
+The `REQ-` prefix makes them grep-able. The 1000-step spacing leaves room to insert siblings without renumbering.
+
+Every requirement carries **two traceability axes**:
+
+- **Vertical** (parent → child in our doc): encoded in the hierarchical ID.
+- **Horizontal** (to the JS original): a `source:` frontmatter field naming file paths and functions in `automaker/` that the requirement describes. Example: `apps/server/src/services/agent-executor.ts::AgentExecutor.execute()`.
+
+Requirements may also carry `depends_on: [REQ-..., ...]` to make implementation ordering explicit.
+
+### Test plan on every leaf
+
+Every leaf (testable) requirement has a **Test plan** section with a brief description (1–3 lines per test case) of what pytest tests will verify it. This is the canonical description of the test and lives in the same file as the requirement so the two can't drift. An optional `TESTS.md` rollup can be generated from the per-requirement Test plans once we have enough requirements to justify it.
+
+### Testing conventions
+
+- **Framework:** `pytest` with `pytest-asyncio` for async tests and `pytest-cov` for coverage.
+- **Function naming:** `def test_REQ_<id_with_underscores_for_dots>_<descriptive_suffix>():` — e.g. `test_REQ_1000_1000_worktree_created_in_automaker_dir`. CI failure output names the broken requirement directly.
+- **Marker:** every test has exactly one `@pytest.mark.req("REQ-1000.1000")` marker. Marker is registered in `conftest.py`. Enables:
+  - Running tests for a specific requirement: `pytest -m 'req("REQ-1000.1000")'`.
+  - Mechanical generation of the requirement → test traceability matrix.
+  - A CI check enforcing "every test has exactly one `req` marker."
+
+### Context management and handoff
+
+Long-running port work will span many AI conversations. When my context window approaches full, I update `automaker/python/docs/HANDOFF.md` with the current state and stop, handing off to a fresh context.
+
+- Memory (machine-local) captures **durable** rules and decisions.
+- `HANDOFF.md` (committed on `python-port`) captures **transient** state of active work.
+
+They complement — they don't duplicate.
