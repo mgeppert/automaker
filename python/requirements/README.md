@@ -6,12 +6,12 @@ This directory contains the requirements for the Python port of Automaker. The r
 
 ```
 requirements/
-├── README.md          (this file)
-├── TEMPLATE.md        (copy when creating a new requirement)
-├── REQ-1000-<slug>.md (one file per requirement)
-├── REQ-2000-<slug>.md
+├── README.md                  (this file)
+├── TEMPLATE.md                (copy when creating a new requirement)
+├── REQ-1000-Brief_Title.md    (one file per requirement)
+├── REQ-2000-Brief_Title.md
 ├── ...
-└── TESTS.md           (planned — rollup of all Test plans, generated later)
+└── TESTS.md                   (planned — rollup of all Test plans, generated later)
 ```
 
 ## ID scheme (summary)
@@ -42,7 +42,7 @@ A parent is `done` when all its children are `done`.
 
 ## Creating a new requirement
 
-1. Copy `TEMPLATE.md` to `REQ-<ID>-<slug>.md` (e.g. `REQ-1000-worktree-management.md`).
+1. Copy `TEMPLATE.md` to `REQ-<ID>-<Brief_Title>.md` (e.g. `REQ-1000-Worktree_Management.md`).
 2. Fill the frontmatter (`id`, `title`, `parent`, `level`, `status`, `source`, `depends_on`).
 3. Write the `Statement` and `User-visible behavior` sections.
 4. For L0 / intermediate parents: leave `Test plan` empty; children will carry the tests. Populate `Children` with the REQ IDs once decomposed.
@@ -51,7 +51,12 @@ A parent is `done` when all its children are `done`.
 
 ## Filenames
 
-Filenames include a human-readable slug after the ID for quick navigation: `REQ-1000.1000-execute-agent-run.md`. The slug is advisory — the ID is canonical.
+Filenames take the form `REQ-<ID>-<Brief_Title>.md`: the ID followed by a human-readable title with underscores between words. Examples:
+
+- `REQ-1000-Worktree_Management.md`
+- `REQ-1000.1000-Create_Worktree_For_Feature.md`
+
+The title is advisory (for human navigation) — the ID in the frontmatter is canonical.
 
 ## Tests
 
